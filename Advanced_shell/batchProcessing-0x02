@@ -10,21 +10,38 @@ POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 # Base API URL
 BASE_URL="https://pokeapi.co/api/v2/pokemon"
 
+# Error log file
+ERROR_LOG="errors.txt"
+> "$ERROR_LOG"  # Clear previous logs
+
 # Loop through each Pokémon
 for pokemon in "${POKEMONS[@]}"; do
     echo "Fetching data for $pokemon..."
-    
-    # Fetch data and save to file
-    response=$(curl -s -o "$DATA_DIR/$pokemon.json" -w "%{http_code}" "$BASE_URL/$pokemon")
-    
-    # Check HTTP status
-    if [ "$response" -eq 200 ]; then
-        echo "Saved data to $DATA_DIR/$pokemon.json ✅"
-    else
-        echo "Error fetching data for $pokemon (HTTP $response)"
-        rm -f "$DATA_DIR/$pokemon.json"
+
+    attempt=1
+    success=false
+
+    while [ $attempt -le 3 ]; do
+        # Make API request
+        response=$(curl -s -o "$DATA_DIR/$pokemon.json" -w "%{http_code}" "$BASE_URL/$pokemon")
+
+        if [ "$response" -eq 200 ]; then
+            echo "Saved data to $DATA_DIR/$pokemon.json ✅"
+            success=true
+            break
+        else
+            echo "Attempt $attempt failed for $pokemon (HTTP $response)"
+            ((attempt++))
+            sleep 2  # Wait before retry
+        fi
+    done
+
+    if [ "$success" = false ]; then
+        echo "Failed to fetch data for $pokemon after 3 attempts" >> "$ERROR_LOG"
+        rm -f "$DATA_DIR/$pokemon.json"  # Remove incomplete file
     fi
-    
-    # Delay to prevent hitting API rate limits
-    sleep 2
+
+    sleep 2  # Delay to avoid rate limiting
 done
+
+echo "Done. Errors logged to $ERROR_LOG (if any)."
