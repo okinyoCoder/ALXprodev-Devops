@@ -1,27 +1,26 @@
 #!/bin/bash
-
 # batchProcessing-0x04
+# Parallel Pokémon data fetcher
 
-# Directory to store JSON files
+# Directory for output
 DATA_DIR="pokemon_data"
 mkdir -p "$DATA_DIR"
 
 # Pokémon list
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 
-# Base API URL
+# API base
 BASE_URL="https://pokeapi.co/api/v2/pokemon"
 
 # Error log
 ERROR_LOG="errors.txt"
-> "$ERROR_LOG"  # Clear previous logs
+> "$ERROR_LOG"  # Clear previous errors
 
-# Function to fetch a Pokémon
+# Function to fetch a Pokémon's data
 fetch_pokemon() {
     local name="$1"
     echo "Fetching data for $name..."
 
-    # Retry logic
     local attempt=1
     local success=false
 
@@ -44,12 +43,12 @@ fetch_pokemon() {
     fi
 }
 
-# Run in parallel
-for p in "${POKEMONS[@]}"; do
-    fetch_pokemon "$p" &
+# Launch all fetches in parallel
+for pokemon in "${POKEMONS[@]}"; do
+    fetch_pokemon "$pokemon" &
 done
 
-# Wait for all background processes
+# Wait for all background jobs
 wait
 
-echo "All fetch operations completed. Check $ERROR_LOG for failures."
+echo "All fetch operations completed. Check $ERROR_LOG for any failures."
